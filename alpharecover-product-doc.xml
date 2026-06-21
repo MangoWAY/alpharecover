@@ -1,0 +1,144 @@
+<title>AlphaRecover 产品决策文档</title>
+
+<h1>产品定位</h1>
+<callout emoji="📌" background-color="light-blue" border-color="blue">
+  <p><b>AlphaRecover 是一个免费、无需登录、浏览器本地处理的透明 PNG 恢复工具。</b>用户上传同一主体的黑底图和白底图，或一批左右拼接图，工具自动反推出 alpha 通道并导出透明 PNG / ZIP。</p>
+</callout>
+
+<h1>为什么值得做</h1>
+<p>AI 生成图经常能稳定产出黑底和白底版本，但透明 PNG 往往边缘差、半透明细节丢失。AlphaRecover 的价值是把“通过黑白背景反推透明度”这个技巧变成一个普通用户一拖即用的工具。</p>
+<ul>
+  <li><b>需求明确：</b>AI 贴纸、游戏素材、商品图、发光特效、玻璃和烟雾类素材都需要透明 PNG。</li>
+  <li><b>差异清楚：</b>它不是泛泛的 AI 抠图，而是专门处理“同主体黑白底图恢复透明通道”。</li>
+  <li><b>成本很低：</b>MVP 全部前端计算，不需要图片上传服务器，不产生推理成本。</li>
+  <li><b>传播点强：</b>免费、本地处理、半透明边缘更干净，适合在设计师和 AI 创作者社区传播。</li>
+</ul>
+
+<h1>核心卖点</h1>
+<table>
+  <thead>
+    <tr><th background-color="light-gray">卖点</th><th background-color="light-gray">对外表达</th><th background-color="light-gray">产品实现</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>免费</td><td>Free alpha recovery for AI images</td><td>静态站 + 浏览器计算，长期免费可持续</td></tr>
+    <tr><td>隐私</td><td>Your images never leave your browser</td><td>不上传原图，不做账号系统，不存储用户文件</td></tr>
+    <tr><td>准确</td><td>Recover soft edges, glow, glass, smoke</td><td>基于黑白底像素差恢复 alpha，而不是语义分割</td></tr>
+    <tr><td>快速</td><td>Drop, preview, download</td><td>自动拆分、自动识别黑白图、默认自动处理</td></tr>
+  </tbody>
+</table>
+
+<h1>目标用户</h1>
+<ul>
+  <li><b>第一优先级：</b>AI 创作者、设计师、独立开发者、游戏素材制作者。</li>
+  <li><b>第二优先级：</b>电商运营、内容运营、表情包和贴纸创作者。</li>
+  <li><b>暂不服务：</b>只想上传任意照片自动抠图的人。这类需求应交给通用 AI 抠图工具。</li>
+</ul>
+
+<h1>MVP 功能</h1>
+<table>
+  <thead>
+    <tr><th background-color="light-gray">模块</th><th background-color="light-gray">必须实现的形态</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>输入</td><td>一个主上传区，支持拖拽、点击选择、粘贴；自动识别左右拼接图，也支持手动切到双图上传。</td></tr>
+    <tr><td>批处理</td><td>MVP 直接支持最多 20 组图片；批量处理在浏览器本地排队执行，用户可逐项查看质量状态和结果预览。</td></tr>
+    <tr><td>校验</td><td>检查尺寸、背景亮度、黑白图差异，给出 Good / Warning / Failed 三种质量状态。</td></tr>
+    <tr><td>处理</td><td>使用 Canvas 读取像素，在 Web Worker 中恢复 alpha，主线程只负责 UI。</td></tr>
+    <tr><td>调节</td><td>只保留 3 个参数：Alpha Cleanup、Edge Smooth、Denoise。其余参数不进 MVP。</td></tr>
+    <tr><td>预览</td><td>默认棋盘格，提供黑、白、品牌蓝、用户自选色四种背景检查。</td></tr>
+    <tr><td>导出</td><td>单张下载透明 PNG；批处理下载 ZIP；默认根据 alpha bbox 裁掉无用透明像素并保留 8px padding，内部文件名默认使用 <code>原文件名-transparent.png</code>。</td></tr>
+    <tr><td>提示词</td><td>提供一组可复制 prompt，指导用户生成同构图黑底图和白底图。</td></tr>
+  </tbody>
+</table>
+
+<h1>不做什么</h1>
+<ul>
+  <li>不做账号、付费、云端图库。</li>
+  <li>不做服务端 AI 抠图。</li>
+  <li>不做云端批处理；MVP 的批处理只在浏览器本地排队执行。</li>
+  <li>不承诺任意图片都能抠，只服务黑白底同主体输入。</li>
+</ul>
+
+<h1>核心体验</h1>
+<ol>
+  <li seq="auto">用户打开页面，第一屏就是工具，不进入营销页。</li>
+  <li seq="auto">拖入一张左右拼接图、两张配对图，或一次拖入最多 20 组素材。</li>
+  <li seq="auto">系统自动拆分并判断黑底图、白底图；判断错时用户可以点击 Swap。</li>
+  <li seq="auto">系统把所有素材加入本地队列，逐项恢复 alpha，并标记 Good / Warning / Failed。</li>
+  <li seq="auto">用户在主结果区查看当前项，在队列中切换其他项，必要时统一调整 3 个参数。</li>
+  <li seq="auto">导出默认开启 Trim bounds，根据 alpha bbox 裁掉多余透明画布并保留 8px padding；需要保持原尺寸时可关闭。</li>
+  <li seq="auto">单张点击 Download PNG；批处理点击 Download ZIP 完成导出。</li>
+</ol>
+
+<h1>算法方案</h1>
+<p>使用黑底图 <code>C_black</code> 和白底图 <code>C_white</code> 恢复 alpha：<code>alpha = 1 - (C_white - C_black)</code>。实际实现对 RGB 三通道分别计算后取稳健平均，再用 <code>F = C_black / alpha</code> 还原前景颜色。alpha 接近 0 时直接置为透明，避免颜色噪声。</p>
+<p>导出前默认执行 alpha bbox 裁剪：扫描 alpha 通道中大于阈值的像素，计算最小包围盒，并在四周保留 8px padding。批处理时对每张图片独立裁剪；如果用户需要序列帧或统一画布对齐，可以关闭 Trim bounds 保留原始尺寸。</p>
+<callout emoji="❗" background-color="light-yellow" border-color="yellow">
+  <p>产品必须明确限制：两张图需要主体位置、形状、光照尽量一致；JPEG 压缩、背景不纯、AI 重新生成导致的细节变化都会让结果变差。</p>
+</callout>
+
+<h1>技术方案</h1>
+<p>当前最合适的实现路径是：<b>Next.js App Router + TypeScript + Tailwind CSS + Web Worker + JSZip + Vercel + PostHog。</b>不再列多个备选方案，先用这条路径最快上线和验证。</p>
+<table>
+  <thead>
+    <tr><th background-color="light-gray">模块</th><th background-color="light-gray">确定选型</th><th background-color="light-gray">理由</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>应用框架</td><td>Next.js App Router + TypeScript</td><td>单页工具也能天然获得 SEO、元信息、路由和 Vercel 部署体验；后续加文档页不需要迁移。</td></tr>
+    <tr><td>样式系统</td><td>Tailwind CSS</td><td>最快做出稳定响应式工具界面，减少早期设计系统成本。</td></tr>
+    <tr><td>图像处理</td><td>Canvas 2D + Web Worker</td><td>像素计算放到 Worker，避免大图导致页面卡死；MVP 不引入 WASM。</td></tr>
+    <tr><td>文件处理</td><td>浏览器 File API + createImageBitmap + canvas.toBlob</td><td>全链路本地处理，不需要上传，也不需要后端存储。</td></tr>
+    <tr><td>批量导出</td><td>JSZip</td><td>在浏览器内把多张透明 PNG 打成 ZIP；不引入服务端打包。</td></tr>
+    <tr><td>部署</td><td>Vercel</td><td>Next.js 原生体验最好，连接 GitHub 后可自动预览和生产发布。</td></tr>
+    <tr><td>统计</td><td>PostHog Cloud</td><td>需要看上传、成功处理、下载、失败原因等产品事件；比只看 PV 更适合验证工具价值。</td></tr>
+    <tr><td>错误监控</td><td>Sentry Browser SDK</td><td>只记录运行错误和性能问题，不上传图片内容。</td></tr>
+    <tr><td>域名</td><td><code>alpharecover.app</code></td><td>名称直观，适合工具站和开发者传播。</td></tr>
+  </tbody>
+</table>
+
+<h1>事件统计</h1>
+<p>只统计行为事件，不采集图片内容，不采集文件名。PostHog 事件命名如下：</p>
+<ul>
+  <li><code>image_uploaded</code>：记录输入模式、图片尺寸区间、文件大小区间。</li>
+  <li><code>batch_created</code>：记录批次数量区间、输入类型、是否混合单图和双图模式。</li>
+  <li><code>pair_validated</code>：记录质量状态和失败原因。</li>
+  <li><code>alpha_recovered</code>：记录处理耗时区间和输出尺寸区间。</li>
+  <li><code>png_downloaded</code>：记录是否开启 Trim bounds、padding 档位、是否调参。</li>
+  <li><code>zip_downloaded</code>：记录批量导出数量区间和失败项数量。</li>
+  <li><code>prompt_copied</code>：判断 prompt 辅助是否有价值。</li>
+</ul>
+
+<h1>上线计划</h1>
+<table>
+  <thead>
+    <tr><th background-color="light-gray">时间</th><th background-color="light-gray">交付</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Day 1</td><td>搭建 Next.js 项目，完成上传、拆分、双图输入、核心 alpha 恢复、单张 PNG 下载。</td></tr>
+    <tr><td>Day 2</td><td>完成批处理队列、质量检测、三项参数调节、背景预览、错误提示。</td></tr>
+    <tr><td>Day 3</td><td>完成 JSZip 批量导出、PostHog、Sentry、SEO 元信息、隐私说明，并部署到 Vercel 生产环境。</td></tr>
+  </tbody>
+</table>
+
+<h1>原型方向</h1>
+<p>新版原型采用“结果优先的批处理工具台”结构：左侧是上传和 prompt，中间顶部是本地队列，中间主画布只突出当前透明结果，旁边只保留结果摘要和轻量背景切换，右侧是统一参数和 ZIP 导出。输入检查和多背景检查不作为默认主界面展示，避免干扰普通用户完成导出。</p>
+
+<h1>成功标准</h1>
+<ul>
+  <li>首版上线后，上传到下载转化率超过 35%。</li>
+  <li>批处理用户的 ZIP 下载率超过 25%，证明多素材工作流真实存在。</li>
+  <li>核心处理耗时：2000px 图片在主流笔记本上低于 2 秒。</li>
+  <li>至少 20% 用户复制 prompt，说明 AI 生成辅助有价值。</li>
+  <li>失败事件里“主体差异大”占比可被识别，为后续自动对齐功能提供依据。</li>
+</ul>
+
+<h1>后续路线</h1>
+<ol>
+  <li seq="auto"><b>v0.1：</b>单页工具上线，验证上传、批处理队列、恢复、PNG / ZIP 下载链路。</li>
+  <li seq="auto"><b>v0.2：</b>增加自动对齐，解决 AI 生成两张图轻微错位的问题。</li>
+  <li seq="auto"><b>v0.3：</b>增加批处理重命名、失败项重试、批量参数预设。</li>
+  <li seq="auto"><b>v1.0：</b>开源核心算法，发布 npm 包，形成开发者入口。</li>
+</ol>
+
+<h1>结论</h1>
+<p>AlphaRecover 应该先做成一个极简但专业的免费工具。产品边界要窄，技术路径要确定，第一版只追求一件事：让用户把一张或一批黑白底素材快速变成边缘干净的透明 PNG。</p>

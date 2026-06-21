@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AlphaRecover Prototype</title>
+  <style>
+    :root {
+      --bg: #f2f5f8;
+      --ink: #111827;
+      --muted: #667085;
+      --line: #d9e1ec;
+      --panel: #ffffff;
+      --soft: #f7f9fc;
+      --blue: #2f66f5;
+      --blue-soft: #eef4ff;
+      --green: #10a36f;
+      --yellow: #c97a13;
+      --red: #e6534f;
+      --violet: #7758d1;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .frame {
+      width: 1440px;
+      height: 1020px;
+      padding: 34px;
+    }
+    .app {
+      height: 100%;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, .12);
+      display: grid;
+      grid-template-rows: 66px 1fr;
+    }
+    header {
+      display: grid;
+      grid-template-columns: 280px 1fr 300px;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      padding: 0 24px;
+      background: rgba(255,255,255,.96);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 780;
+      font-size: 19px;
+    }
+    .mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--blue), var(--green));
+      position: relative;
+    }
+    .mark:after {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.88);
+    }
+    .center-copy {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .badge {
+      height: 34px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      border: 1px solid #b7e4ce;
+      border-radius: 999px;
+      color: #067647;
+      background: #effcf6;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .ghost {
+      height: 34px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: #344054;
+      background: white;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 300px 1fr 312px;
+      min-height: 0;
+    }
+    .left, .right {
+      background: #fbfcfe;
+      padding: 20px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+    }
+    .right {
+      border-right: 0;
+      border-left: 1px solid var(--line);
+    }
+    .workspace {
+      min-width: 0;
+      padding: 22px;
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      gap: 16px;
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 780;
+      color: #344054;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .mode {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      background: #eef2f7;
+      border-radius: 8px;
+    }
+    .mode div {
+      height: 34px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .mode .active {
+      background: white;
+      color: var(--ink);
+      box-shadow: 0 1px 4px rgba(16,24,40,.1);
+    }
+    .drop {
+      height: 266px;
+      border: 1.5px dashed #99a7ba;
+      border-radius: 9px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background:
+        linear-gradient(135deg, rgba(47,102,245,.06), transparent 45%),
+        repeating-linear-gradient(45deg, #fbfdff, #fbfdff 12px, #f0f4fa 12px, #f0f4fa 24px);
+    }
+    .upload-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      background: white;
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      color: var(--blue);
+      font-size: 25px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 22px rgba(15,23,42,.08);
+    }
+    h2 {
+      margin: 0 0 7px;
+      font-size: 21px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+    p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .primary {
+      height: 40px;
+      border-radius: 7px;
+      border: 0;
+      background: var(--blue);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 780;
+      margin-top: 16px;
+      min-width: 142px;
+    }
+    .prompt {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 14px;
+      background: white;
+      display: grid;
+      gap: 9px;
+    }
+    .prompt .code {
+      background: #101828;
+      color: #d1fadf;
+      border-radius: 7px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .mini-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .copy {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #344054;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .stage-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 16px;
+    }
+    .stage-title {
+      font-size: 20px;
+      font-weight: 780;
+    }
+    .quality {
+      border: 1px solid #fedf89;
+      background: #fffbeb;
+      color: #92400e;
+      padding: 9px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 740;
+    }
+    .batch-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .batch-item {
+      height: 58px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: white;
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+    }
+    .batch-item.active {
+      border-color: #8fb3ff;
+      background: var(--blue-soft);
+      box-shadow: inset 0 0 0 1px rgba(47,102,245,.14);
+    }
+    .tiny-thumb {
+      width: 42px;
+      height: 42px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      position: relative;
+      overflow: hidden;
+      background: #0b0f17;
+    }
+    .tiny-thumb.white { background: #fff; }
+    .tiny-thumb.checker {
+      background-color: #fff;
+      background-image:
+        linear-gradient(45deg, #d8dee8 25%, transparent 25%),
+        linear-gradient(-45deg, #d8dee8 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #d8dee8 75%),
+        linear-gradient(-45deg, transparent 75%, #d8dee8 75%);
+      background-size: 14px 14px;
+      background-position: 0 0, 0 7px, 7px -7px, -7px 0;
+    }
+    .tiny-thumb .asset {
+      width: 28px;
+      height: 34px;
+      filter: none;
+    }
+    .batch-name {
+      font-size: 12px;
+      font-weight: 760;
+      color: #344054;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .batch-meta {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 2px;
+    }
+    .batch-status {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+    .batch-status.warn { background: var(--yellow); }
+    .focus-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 230px;
+      gap: 16px;
+    }
+    .hero-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+      display: grid;
+      grid-template-rows: 44px minmax(0, 1fr);
+      min-height: 0;
+    }
+    .hero-title {
+      border-bottom: 1px solid var(--line);
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 760;
+    }
+    .hero-title span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .result-panel {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 12px;
+      min-height: 0;
+    }
+    .result-summary {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: white;
+      overflow: hidden;
+    }
+    .summary-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      height: 40px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      font-weight: 760;
+    }
+    .summary-head span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .summary-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid #edf1f6;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .summary-line:last-child { border-bottom: 0; }
+    .summary-line b { color: var(--ink); }
+    .background-switch {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: white;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+    .switch-title {
+      font-size: 12px;
+      font-weight: 760;
+      color: #344054;
+    }
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .swatch {
+      height: 32px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: white;
+    }
+    .swatch.active {
+      box-shadow: 0 0 0 2px rgba(47,102,245,.24);
+      border-color: #8fb3ff;
+    }
+    .swatch.checker {
+      background-color: #fff;
+      background-image:
+        linear-gradient(45deg, #d8dee8 25%, transparent 25%),
+        linear-gradient(-45deg, #d8dee8 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #d8dee8 75%),
+        linear-gradient(-45deg, transparent 75%, #d8dee8 75%);
+      background-size: 12px 12px;
+      background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+    }
+    .swatch.dark { background: #090b10; }
+    .swatch.blue { background: #e9f0ff; }
+    .result-note {
+      border: 1px solid #b7e4ce;
+      background: #f0fdf7;
+      color: #05603a;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      align-self: start;
+    }
+    .canvases {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .canvas-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+      display: grid;
+      grid-template-rows: 42px 1fr;
+      min-height: 0;
+    }
+    .canvas-title {
+      border-bottom: 1px solid var(--line);
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 760;
+    }
+    .canvas-title span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .preview {
+      position: relative;
+      overflow: hidden;
+      background: #0b0f17;
+    }
+    .preview.white { background: #fff; }
+    .preview.checker {
+      background-color: #fff;
+      background-image:
+        linear-gradient(45deg, #d8dee8 25%, transparent 25%),
+        linear-gradient(-45deg, #d8dee8 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #d8dee8 75%),
+        linear-gradient(-45deg, transparent 75%, #d8dee8 75%);
+      background-size: 28px 28px;
+      background-position: 0 0, 0 14px, 14px -14px, -14px 0;
+    }
+    .asset {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 190px;
+      height: 234px;
+      filter: drop-shadow(0 28px 30px rgba(16,24,40,.22));
+    }
+    .shape {
+      position: absolute;
+      inset: 16px 24px 24px;
+      border-radius: 47% 47% 41% 41%;
+      background:
+        radial-gradient(circle at 43% 28%, #fff6cb 0 11%, transparent 12%),
+        radial-gradient(circle at 44% 32%, #ffc75a 0 35%, #ed7458 36% 61%, rgba(237,116,88,.20) 62% 100%);
+    }
+    .shape:before {
+      content: "";
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: -23px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(237,116,88,.14);
+      filter: blur(12px);
+    }
+    .comparison {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      height: 168px;
+    }
+    .small-card {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      overflow: hidden;
+      background: white;
+      display: grid;
+      grid-template-rows: 32px 1fr;
+    }
+    .small-title {
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+      color: #475467;
+      padding: 8px 10px;
+      font-weight: 740;
+    }
+    .mini-preview {
+      position: relative;
+    }
+    .mini-preview.black { background: #090b10; }
+    .mini-preview.white { background: #fff; }
+    .mini-preview.blue { background: #e9f0ff; }
+    .mini-preview .asset {
+      width: 62px;
+      height: 78px;
+    }
+    .input-pair .mini-preview .asset {
+      width: 96px;
+      height: 122px;
+    }
+    .control {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: white;
+      padding: 13px;
+      display: grid;
+      gap: 10px;
+    }
+    .toggle-control {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: white;
+      padding: 13px;
+      display: grid;
+      gap: 6px;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .toggle-title {
+      color: #344054;
+      font-size: 13px;
+      font-weight: 720;
+    }
+    .toggle-sub {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .switch {
+      width: 38px;
+      height: 22px;
+      border-radius: 999px;
+      background: var(--blue);
+      position: relative;
+      flex: none;
+    }
+    .switch:after {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: white;
+      right: 3px;
+      top: 3px;
+      box-shadow: 0 1px 3px rgba(16,24,40,.24);
+    }
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      color: #344054;
+      font-size: 13px;
+      font-weight: 720;
+    }
+    .control-label span {
+      color: var(--muted);
+      font-weight: 650;
+    }
+    .track {
+      height: 6px;
+      border-radius: 99px;
+      background: #e6ebf2;
+      overflow: hidden;
+    }
+    .track div {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--blue);
+    }
+    .status-card {
+      border: 1px solid #b7e4ce;
+      background: #f0fdf7;
+      color: #05603a;
+      border-radius: 9px;
+      padding: 13px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .export-card {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: white;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+    .download {
+      height: 44px;
+      border: 0;
+      border-radius: 7px;
+      background: var(--ink);
+      color: white;
+      font-size: 14px;
+      font-weight: 780;
+    }
+    .secondary {
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: white;
+      color: #344054;
+      font-size: 13px;
+      font-weight: 740;
+    }
+    .facts {
+      display: grid;
+      gap: 8px;
+    }
+    .fact {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+      border-top: 1px solid #edf1f6;
+      padding-top: 8px;
+    }
+    .fact b { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="app">
+      <header>
+        <div class="brand"><div class="mark"></div>AlphaRecover</div>
+        <div class="center-copy">Recover transparent PNGs from matched black and white AI renders</div>
+        <div class="top-actions"><div class="badge">Local only</div><div class="ghost">Feedback</div></div>
+      </header>
+      <main>
+        <aside class="left">
+          <div class="section-title">Input</div>
+          <div class="mode"><div class="active">Split image</div><div>Two images</div></div>
+          <div class="drop">
+            <div class="upload-icon">↑</div>
+            <h2>Drop pairs or a folder</h2>
+            <p>Process one image or batch up to 20 matched black / white pairs locally.</p>
+            <div class="primary">Choose images</div>
+          </div>
+          <div class="prompt">
+            <div class="mini-row"><div class="section-title">Prompt</div><button class="copy">Copy</button></div>
+            <div class="code">same object, same composition,<br/>pure black background<br/><br/>same object, same composition,<br/>pure white background</div>
+          </div>
+        </aside>
+        <section class="workspace">
+          <div class="stage-head">
+            <div>
+              <div class="stage-title">Batch recover</div>
+              <p>8 pairs detected. Review one result while the rest are processed in the queue.</p>
+            </div>
+            <div class="quality">7 ready · 1 needs review</div>
+          </div>
+          <div class="batch-strip">
+            <div class="batch-item active">
+              <div class="tiny-thumb checker"><div class="asset"><div class="shape"></div></div></div>
+              <div><div class="batch-name">sticker-01</div><div class="batch-meta">Ready · 0.8s</div></div>
+              <div class="batch-status"></div>
+            </div>
+            <div class="batch-item">
+              <div class="tiny-thumb checker"><div class="asset"><div class="shape"></div></div></div>
+              <div><div class="batch-name">sticker-02</div><div class="batch-meta">Ready · 0.7s</div></div>
+              <div class="batch-status"></div>
+            </div>
+            <div class="batch-item">
+              <div class="tiny-thumb checker"><div class="asset"><div class="shape"></div></div></div>
+              <div><div class="batch-name">glass-03</div><div class="batch-meta">Review edge</div></div>
+              <div class="batch-status warn"></div>
+            </div>
+            <div class="batch-item">
+              <div class="tiny-thumb checker"><div class="asset"><div class="shape"></div></div></div>
+              <div><div class="batch-name">+5 more</div><div class="batch-meta">Queued locally</div></div>
+              <div class="batch-status"></div>
+            </div>
+          </div>
+          <div class="focus-grid">
+            <div class="hero-card">
+              <div class="hero-title">Transparent result <span>sticker-01 · 2048 x 2048</span></div>
+              <div class="preview checker"><div class="asset"><div class="shape"></div></div></div>
+            </div>
+            <div class="result-panel">
+              <div class="result-summary">
+                <div class="summary-head">Current result <span>ready</span></div>
+                <div class="summary-line"><span>Filename</span><b>sticker-01.png</b></div>
+                <div class="summary-line"><span>Canvas</span><b>Trimmed · 8px pad</b></div>
+                <div class="summary-line"><span>Quality</span><b>Good</b></div>
+              </div>
+              <div class="background-switch">
+                <div class="switch-title">Preview background</div>
+                <div class="swatches">
+                  <div class="swatch checker active"></div>
+                  <div class="swatch dark"></div>
+                  <div class="swatch"></div>
+                  <div class="swatch blue"></div>
+                </div>
+              </div>
+              <div class="result-note">Looks ready. Shared adjustments are applied to the whole batch.</div>
+            </div>
+          </div>
+        </section>
+        <aside class="right">
+          <div class="section-title">Adjust</div>
+          <div class="control">
+            <div class="control-label">Alpha Cleanup <span>62</span></div>
+            <div class="track"><div style="width:62%"></div></div>
+          </div>
+          <div class="control">
+            <div class="control-label">Edge Smooth <span>38</span></div>
+            <div class="track"><div style="width:38%"></div></div>
+          </div>
+          <div class="control">
+            <div class="control-label">Denoise <span>45</span></div>
+            <div class="track"><div style="width:45%"></div></div>
+          </div>
+          <div class="toggle-control">
+            <div class="toggle-row">
+              <div class="toggle-title">Trim bounds</div>
+              <div class="switch"></div>
+            </div>
+            <div class="toggle-sub">Crop empty transparent pixels with 8px padding.</div>
+          </div>
+          <div class="status-card">Batch ready. Shared adjustments apply to all 8 outputs; one item is flagged for manual review.</div>
+          <div class="export-card">
+            <button class="download">Download ZIP</button>
+            <button class="secondary">Copy current PNG</button>
+            <div class="facts">
+              <div class="fact"><span>Output</span><b>8 trimmed PNGs</b></div>
+              <div class="fact"><span>Packaging</span><b>ZIP local</b></div>
+              <div class="fact"><span>Padding</span><b>8px</b></div>
+              <div class="fact"><span>Total time</span><b>6.4s</b></div>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
