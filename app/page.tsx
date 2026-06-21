@@ -422,8 +422,8 @@ export default function Home() {
           ? "blue-bg"
           : "white-bg";
 
-  const visibleItems = items.slice(0, 4);
-  const moreCount = Math.max(0, items.length - 3);
+  const visibleItems = items.slice(0, 3);
+  const moreCount = Math.max(0, items.length - 2);
   const outputCount = items.filter((item) => item.blob).length;
 
   return (
@@ -512,6 +512,71 @@ export default function Home() {
               )}
             </div>
 
+            <div className="status-card">
+              {hasRealItems
+                ? "Batch ready. Shared adjustments apply to all outputs; flagged items remain available for review."
+                : "Drop images to recover alpha locally and export transparent PNGs."}
+            </div>
+
+            <div className="export-card">
+              <button className="download-button" disabled={!outputCount} onClick={downloadZip}>
+                {outputCount > 1 ? "Download ZIP" : "Download PNG"}
+              </button>
+              <button className="secondary-button" disabled={!activeItem?.blob} onClick={copyCurrent}>
+                Copy current PNG
+              </button>
+              <div className="facts">
+                <div className="fact">
+                  <span>Output</span>
+                  <b>{outputCount ? `${outputCount} ${settings.trimBounds ? "trimmed " : ""}PNG${outputCount > 1 ? "s" : ""}` : "None"}</b>
+                </div>
+                <div className="fact">
+                  <span>Packaging</span>
+                  <b>{outputCount > 1 ? "ZIP local" : "PNG local"}</b>
+                </div>
+                <div className="fact">
+                  <span>Padding</span>
+                  <b>{settings.trimBounds ? `${settings.trimPadding}px` : "Off"}</b>
+                </div>
+              </div>
+            </div>
+
+            <details className="advanced-panel">
+              <summary>
+                <span>Advanced settings</span>
+                <span>Optional</span>
+              </summary>
+              <div className="advanced-content">
+                <SliderControl
+                  label="Alpha Cleanup"
+                  value={settings.alphaCleanup}
+                  onChange={(value) => updateSetting("alphaCleanup", value)}
+                />
+                <SliderControl
+                  label="Edge Smooth"
+                  value={settings.edgeSmooth}
+                  onChange={(value) => updateSetting("edgeSmooth", value)}
+                />
+                <SliderControl
+                  label="Denoise"
+                  value={settings.denoise}
+                  onChange={(value) => updateSetting("denoise", value)}
+                />
+
+                <div className="toggle-control">
+                  <div className="toggle-row">
+                    <div className="toggle-title">Trim bounds</div>
+                    <button
+                      aria-label="Toggle trim bounds"
+                      className={`switch-button ${settings.trimBounds ? "on" : ""}`}
+                      onClick={() => updateSetting("trimBounds", !settings.trimBounds)}
+                    />
+                  </div>
+                  <div className="toggle-sub">Crop empty transparent pixels with 8px padding.</div>
+                </div>
+              </div>
+            </details>
+
             <div className="prompt-card">
               <div className="prompt-head">
                 <div className="section-title">Prompt</div>
@@ -529,6 +594,15 @@ export default function Home() {
                 <br />
                 pure white background
               </div>
+            </div>
+
+            <div className="info-card">
+              <div className="section-title">How it works</div>
+              <ol>
+                <li>Generate the same subject on black and white backgrounds.</li>
+                <li>Upload a side-by-side render or matching pairs.</li>
+                <li>Download trimmed transparent PNGs or a ZIP batch.</li>
+              </ol>
             </div>
 
             {error ? <div className="error-box">{error}</div> : null}
@@ -553,9 +627,9 @@ export default function Home() {
 
             <div className="batch-strip">
               {visibleItems.length
-                ? visibleItems.slice(0, 4).map((item, index) => {
+                ? visibleItems.slice(0, 3).map((item, index) => {
                     const displayItem =
-                      index === 3 && moreCount > 0
+                      index === 2 && moreCount > 0
                         ? { ...item, name: `+${moreCount} more`, message: "Queued locally" }
                         : item;
                     return (
@@ -576,7 +650,7 @@ export default function Home() {
                       </button>
                     );
                   })
-                : Array.from({ length: 4 }, (_, index) => <div className="batch-placeholder" key={index} />)}
+                : Array.from({ length: 3 }, (_, index) => <div className="batch-placeholder" key={index} />)}
             </div>
 
             <div className="focus-grid">
@@ -644,69 +718,6 @@ export default function Home() {
             </div>
           </section>
 
-          <aside className="right-panel">
-            <div className="section-title">Adjust</div>
-            <SliderControl
-              label="Alpha Cleanup"
-              value={settings.alphaCleanup}
-              onChange={(value) => updateSetting("alphaCleanup", value)}
-            />
-            <SliderControl
-              label="Edge Smooth"
-              value={settings.edgeSmooth}
-              onChange={(value) => updateSetting("edgeSmooth", value)}
-            />
-            <SliderControl
-              label="Denoise"
-              value={settings.denoise}
-              onChange={(value) => updateSetting("denoise", value)}
-            />
-
-            <div className="toggle-control">
-              <div className="toggle-row">
-                <div className="toggle-title">Trim bounds</div>
-                <button
-                  aria-label="Toggle trim bounds"
-                  className={`switch-button ${settings.trimBounds ? "on" : ""}`}
-                  onClick={() => updateSetting("trimBounds", !settings.trimBounds)}
-                />
-              </div>
-              <div className="toggle-sub">Crop empty transparent pixels with 8px padding.</div>
-            </div>
-
-            <div className="status-card">
-              {hasRealItems
-                ? "Batch ready. Shared adjustments apply to all outputs; flagged items remain available for review."
-                : "Drop images to recover alpha locally and export transparent PNGs."}
-            </div>
-
-            <div className="export-card">
-              <button className="download-button" disabled={!outputCount} onClick={downloadZip}>
-                {outputCount > 1 ? "Download ZIP" : "Download PNG"}
-              </button>
-              <button className="secondary-button" disabled={!activeItem?.blob} onClick={copyCurrent}>
-                Copy current PNG
-              </button>
-              <div className="facts">
-                <div className="fact">
-                  <span>Output</span>
-                  <b>{outputCount ? `${outputCount} ${settings.trimBounds ? "trimmed " : ""}PNG${outputCount > 1 ? "s" : ""}` : "None"}</b>
-                </div>
-                <div className="fact">
-                  <span>Packaging</span>
-                  <b>{outputCount > 1 ? "ZIP local" : "PNG local"}</b>
-                </div>
-                <div className="fact">
-                  <span>Padding</span>
-                  <b>{settings.trimBounds ? `${settings.trimPadding}px` : "Off"}</b>
-                </div>
-                <div className="fact">
-                  <span>Processing</span>
-                  <b>Local</b>
-                </div>
-              </div>
-            </div>
-          </aside>
         </div>
       </div>
     </main>
