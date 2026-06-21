@@ -4,6 +4,7 @@ import puppeteer from "puppeteer-core";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const filePath = path.join(root, "test-assets", "sample-split.svg");
+const targetUrl = process.env.SMOKE_URL ?? "http://localhost:3000";
 
 const browser = await puppeteer.launch({
   executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -14,7 +15,7 @@ const browser = await puppeteer.launch({
 try {
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 1020 });
-  await page.goto("http://localhost:3000", { waitUntil: "networkidle0" });
+  await page.goto(targetUrl, { waitUntil: "networkidle0" });
   const input = await page.$('input[type="file"]');
   if (!input) throw new Error("File input not found");
   await input.uploadFile(filePath);

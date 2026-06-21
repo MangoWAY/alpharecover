@@ -9,3 +9,4 @@ dist
 *.log
 .DS_Store
 app-screenshot.png
+vercel-screenshot.png
