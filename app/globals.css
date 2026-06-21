@@ -62,7 +62,7 @@ button {
 
 .topbar {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 280px;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 18px;
   min-height: 66px;
@@ -96,15 +96,6 @@ button {
   inset: 10px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.88);
-}
-
-.top-copy {
-  overflow: hidden;
-  color: #576174;
-  font-size: 15px;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .top-actions {
@@ -341,49 +332,6 @@ button {
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.95);
   padding: 18px;
-}
-
-.result-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 16px;
-}
-
-.result-card-head h2 {
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.2;
-}
-
-.result-card-head p {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.quality {
-  flex: none;
-  border: 1px solid #fedf89;
-  border-radius: 999px;
-  background: #fffbeb;
-  color: #92400e;
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 740;
-}
-
-.quality.good {
-  border-color: #b7e4ce;
-  background: #f0fdf7;
-  color: #05603a;
-}
-
-.quality.failed {
-  border-color: #fecaca;
-  background: #fff1f2;
-  color: #be123c;
 }
 
 .result-layout {
@@ -915,14 +863,6 @@ button {
     border-radius: 0;
   }
 
-  .topbar {
-    grid-template-columns: 1fr auto;
-  }
-
-  .top-copy {
-    display: none;
-  }
-
   .result-layout,
   .support-grid {
     grid-template-columns: 1fr;
@@ -962,11 +902,6 @@ button {
 
   .upload-card {
     padding: 14px;
-  }
-
-  .result-card-head {
-    align-items: flex-start;
-    flex-direction: column;
   }
 
   .formula-preview {

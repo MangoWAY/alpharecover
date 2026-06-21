@@ -1,7 +1,7 @@
 "use client";
 
 import JSZip from "jszip";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Mode = "split" | "two";
 type ItemStatus = "queued" | "processing" | "ready" | "warning" | "failed";
@@ -237,17 +237,6 @@ export default function Home() {
   }, []);
 
   const activeItem = items.find((item) => item.id === activeId) ?? items[0];
-  const readyCount = items.filter((item) => item.status === "ready").length;
-  const warningCount = items.filter((item) => item.status === "warning").length;
-  const failedCount = items.filter((item) => item.status === "failed").length;
-  const hasRealItems = items.length > 0;
-
-  const qualityText = useMemo(() => {
-    if (!hasRealItems) return "Drop images to start";
-    if (failedCount) return `${readyCount} ready · ${failedCount} failed`;
-    if (warningCount) return `${readyCount} ready · ${warningCount} needs review`;
-    return `${readyCount} ready`;
-  }, [failedCount, hasRealItems, readyCount, warningCount]);
 
   const processPairs = useCallback(
     async (pairs: PairInput[]) => {
@@ -438,7 +427,6 @@ export default function Home() {
             <span className="brand-mark" />
             AlphaRecover
           </div>
-          <div className="top-copy">Recover transparent PNGs from black / white renders</div>
           <div className="top-actions">
             <span className="badge">Local only</span>
             <a className="ghost-button" href="mailto:feedback@example.com">
@@ -448,8 +436,8 @@ export default function Home() {
         </header>
 
         <section className="hero-section">
-          <h1>Recover transparency from black &amp; white renders</h1>
-          <p>Upload a split render or two matched images. Runs locally in your browser.</p>
+          <h1>Recover transparent PNGs</h1>
+          <p>From matched black and white renders. Everything runs locally.</p>
           <div className="mode-toggle hero-mode">
             <button className={mode === "split" ? "active" : ""} onClick={() => setMode("split")}>
               Split image
@@ -470,7 +458,7 @@ export default function Home() {
           <div className="upload-card-inner">
             <div className="upload-icon">↑</div>
             <h2>Drop your images here</h2>
-            <p>{mode === "split" ? "Split black/white image or a batch of split renders" : "Matched black and white image sets in the same order"}</p>
+            <p>{mode === "split" ? "Upload one split render or a batch." : "Upload black and white images in the same order."}</p>
             <div className="upload-actions">
               {mode === "split" ? (
                 <label className="primary-button">
@@ -521,16 +509,6 @@ export default function Home() {
 
         {showResult ? (
           <section className="result-card">
-            <div className="result-card-head">
-              <div>
-                <h2>Result preview</h2>
-                <p>{qualityText}</p>
-              </div>
-              {hasRealItems ? (
-                <div className={`quality ${failedCount ? "failed" : warningCount ? "" : "good"}`}>{qualityText}</div>
-              ) : null}
-            </div>
-
             <div className="result-layout">
               <div className="formula-preview">
                 <PreviewTile title="Black input" subtitle="alpha from black" imageUrl={activeItem?.blackUrl} kind="black" />
