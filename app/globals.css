@@ -388,9 +388,9 @@ button {
 
 .result-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 312px;
-  align-items: stretch;
-  gap: 22px;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  align-items: center;
+  gap: 18px;
 }
 
 .formula-preview {
@@ -487,6 +487,7 @@ button {
   display: flex;
   min-width: 0;
   flex-direction: column;
+  justify-content: center;
   gap: 12px;
 }
 

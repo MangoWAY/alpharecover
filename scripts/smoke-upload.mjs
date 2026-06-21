@@ -20,7 +20,12 @@ try {
   if (!input) throw new Error("File input not found");
   await input.uploadFile(filePath);
   await page.waitForFunction(
-    () => document.body.innerText.includes("1 trimmed PNG") || document.body.innerText.includes("1 PNG"),
+    () => {
+      const downloadButton = Array.from(document.querySelectorAll("button")).find((button) =>
+        /Download (PNG|ZIP)/.test(button.textContent ?? "")
+      );
+      return Boolean(downloadButton && !downloadButton.disabled && document.body.innerText.includes("Ready"));
+    },
     { timeout: 10000 }
   );
   const result = await page.evaluate(() => ({

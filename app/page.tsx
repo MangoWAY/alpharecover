@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Mode = "split" | "two";
 type ItemStatus = "queued" | "processing" | "ready" | "warning" | "failed";
-type Background = "checker" | "dark" | "white" | "blue";
 
 type PairInput = {
   id: string;
@@ -215,7 +214,6 @@ export default function Home() {
   const [mode, setMode] = useState<Mode>("split");
   const [items, setItems] = useState<BatchItem[]>([]);
   const [activeId, setActiveId] = useState("");
-  const [background, setBackground] = useState<Background>("checker");
   const [blackFiles, setBlackFiles] = useState<File[]>([]);
   const [whiteFiles, setWhiteFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -391,11 +389,6 @@ export default function Home() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
-  const copyCurrent = async () => {
-    if (!activeItem?.blob || !("ClipboardItem" in window)) return;
-    await navigator.clipboard.write([new ClipboardItem({ "image/png": activeItem.blob })]);
-  };
-
   const pasteFromClipboard = async () => {
     try {
       const clipboardItems = await navigator.clipboard.read();
@@ -527,106 +520,64 @@ export default function Home() {
         {error ? <div className="error-box page-error">{error}</div> : null}
 
         {showResult ? (
-        <section className="result-card">
-          <div className="result-card-head">
-            <div>
-              <h2>Result preview</h2>
-              <p>{qualityText}</p>
-            </div>
-            {hasRealItems ? (
-              <div className={`quality ${failedCount ? "failed" : warningCount ? "" : "good"}`}>{qualityText}</div>
-            ) : null}
-          </div>
-
-          <div className="result-layout">
-            <div className="formula-preview">
-              <PreviewTile title="Black input" subtitle="alpha from black" imageUrl={activeItem?.blackUrl} kind="black" />
-              <div className="formula-symbol">+</div>
-              <PreviewTile title="White input" subtitle="details from white" imageUrl={activeItem?.whiteUrl} kind="white" />
-              <div className="formula-symbol">=</div>
-              <PreviewTile
-                title="Transparent PNG result"
-                subtitle={activeItem?.outputWidth ? `${activeItem.outputWidth} × ${activeItem.outputHeight}` : "preview"}
-                imageUrl={activeItem?.url}
-                kind={background}
-              />
+          <section className="result-card">
+            <div className="result-card-head">
+              <div>
+                <h2>Result preview</h2>
+                <p>{qualityText}</p>
+              </div>
+              {hasRealItems ? (
+                <div className={`quality ${failedCount ? "failed" : warningCount ? "" : "good"}`}>{qualityText}</div>
+              ) : null}
             </div>
 
-            <aside className="result-actions">
-              <div className="background-switch">
-                <div className="switch-title">Preview background</div>
-                <div className="swatches">
-                  {(["checker", "dark", "white", "blue"] as Background[]).map((candidate) => (
-                    <button
-                      aria-label={`Preview on ${candidate} background`}
-                      className={`swatch ${candidate === "checker" ? "checker" : candidate === "dark" ? "dark" : candidate === "blue" ? "blue" : ""} ${
-                        background === candidate ? "active" : ""
-                      }`}
-                      key={candidate}
-                      onClick={() => setBackground(candidate)}
-                    />
-                  ))}
-                </div>
-                <div className="swatch-labels">
-                  <span>Checker</span>
-                  <span>Black</span>
-                  <span>White</span>
-                  <span>Light</span>
-                </div>
+            <div className="result-layout">
+              <div className="formula-preview">
+                <PreviewTile title="Black input" subtitle="alpha from black" imageUrl={activeItem?.blackUrl} kind="black" />
+                <div className="formula-symbol">+</div>
+                <PreviewTile title="White input" subtitle="details from white" imageUrl={activeItem?.whiteUrl} kind="white" />
+                <div className="formula-symbol">=</div>
+                <PreviewTile
+                  title="Transparent PNG result"
+                  subtitle={activeItem?.outputWidth ? `${activeItem.outputWidth} × ${activeItem.outputHeight}` : "preview"}
+                  imageUrl={activeItem?.url}
+                  kind="checker"
+                />
               </div>
-              <button className="download-button" disabled={!outputCount} onClick={downloadZip}>
-                {outputCount > 1 ? "Download ZIP" : "Download PNG"}
-              </button>
-              <button className="secondary-button" disabled={!activeItem?.blob} onClick={copyCurrent}>
-                Copy current PNG
-              </button>
-              <div className="export-meta">
-                <div>
-                  <span>Output</span>
-                  <b>
-                    {outputCount
-                      ? `${outputCount} ${settings.trimBounds ? "trimmed " : ""}PNG${outputCount > 1 ? "s" : ""}`
-                      : "None"}
-                  </b>
-                </div>
-                <div>
-                  <span>Trim padding</span>
-                  <b>{settings.trimBounds ? `${settings.trimPadding}px` : "Off"}</b>
-                </div>
-                <div>
-                  <span>Processing</span>
-                  <b>Local</b>
-                </div>
-              </div>
-            </aside>
-          </div>
 
-          <div className="batch-strip compact">
-            {visibleItems.length
-              ? visibleItems.slice(0, 3).map((item, index) => {
-                  const displayItem =
-                    index === 2 && moreCount > 0
-                      ? { ...item, name: `+${moreCount} more`, message: "Queued locally" }
-                      : item;
-                  return (
-                    <button
-                      className={`batch-item ${activeId === item.id ? "active" : ""}`}
-                      key={item.id}
-                      onClick={() => setActiveId(item.id)}
-                      type="button"
-                    >
-                      <div className="tiny-thumb">{item.thumbUrl ? <img src={item.thumbUrl} alt="" /> : null}</div>
-                      <div>
-                        <div className="batch-name">{displayItem.name}</div>
-                        <div className="batch-meta">{displayItem.message || statusLabel(displayItem.status)}</div>
-                      </div>
-                      <span className={`status-dot ${item.status}`} />
-                    </button>
-                  );
-                })
-              : null}
-          </div>
-        </section>
+              <aside className="result-actions">
+                <button className="download-button" disabled={!outputCount} onClick={downloadZip}>
+                  {outputCount > 1 ? "Download ZIP" : "Download PNG"}
+                </button>
+              </aside>
+            </div>
+
+            <div className="batch-strip compact">
+              {visibleItems.length
+                ? visibleItems.slice(0, 3).map((item, index) => {
+                    const displayItem =
+                      index === 2 && moreCount > 0
+                        ? { ...item, name: `+${moreCount} more`, message: "Queued locally" }
+                        : item;
+                    return (
+                      <button
+                        className={`batch-item ${activeId === item.id ? "active" : ""}`}
+                        key={item.id}
+                        onClick={() => setActiveId(item.id)}
+                        type="button"
+                      >
+                        <div className="tiny-thumb">{item.thumbUrl ? <img src={item.thumbUrl} alt="" /> : null}</div>
+                        <div>
+                          <div className="batch-name">{displayItem.name}</div>
+                          <div className="batch-meta">{displayItem.message || statusLabel(displayItem.status)}</div>
+                        </div>
+                        <span className={`status-dot ${item.status}`} />
+                      </button>
+                    );
+                  })
+                : null}
+            </div>
+          </section>
         ) : null}
 
         <details className="advanced-panel page-advanced">
@@ -710,16 +661,14 @@ function PreviewTile({
   title: string;
   subtitle: string;
   imageUrl?: string;
-  kind: "black" | "white" | Background;
+  kind: "black" | "white" | "checker";
 }) {
   const bgClass =
     kind === "checker"
       ? "checker-bg"
-      : kind === "dark" || kind === "black"
+      : kind === "black"
         ? "dark-bg"
-        : kind === "blue"
-          ? "blue-bg"
-          : "white-bg";
+        : "white-bg";
   return (
     <div className="preview-tile">
       <div className="preview-tile-title">{title}</div>
