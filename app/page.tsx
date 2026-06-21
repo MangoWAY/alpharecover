@@ -434,6 +434,8 @@ export default function Home() {
   const visibleItems = items.slice(0, 3);
   const moreCount = Math.max(0, items.length - 2);
   const outputCount = items.filter((item) => item.blob).length;
+  const isProcessing = items.some((item) => item.status === "queued" || item.status === "processing");
+  const showResult = outputCount > 0;
 
   return (
     <main className="app-shell">
@@ -517,16 +519,19 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <div className="privacy-note">Runs locally. Your images are not uploaded.</div>
+          <div className="privacy-note">
+            {isProcessing && !showResult ? "Processing locally..." : "Runs locally. Your images are not uploaded."}
+          </div>
         </section>
 
         {error ? <div className="error-box page-error">{error}</div> : null}
 
+        {showResult ? (
         <section className="result-card">
           <div className="result-card-head">
             <div>
               <h2>Result preview</h2>
-              <p>{hasRealItems ? qualityText : "Upload an image to see the recovered PNG here."}</p>
+              <p>{qualityText}</p>
             </div>
             {hasRealItems ? (
               <div className={`quality ${failedCount ? "failed" : warningCount ? "" : "good"}`}>{qualityText}</div>
@@ -622,6 +627,7 @@ export default function Home() {
               : null}
           </div>
         </section>
+        ) : null}
 
         <details className="advanced-panel page-advanced">
           <summary>
