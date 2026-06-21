@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="240" viewBox="0 0 420 240">
+  <defs>
+    <g id="plant">
+      <ellipse cx="105" cy="192" rx="34" ry="10" fill="#000000" opacity=".18"/>
+      <g opacity=".92">
+        <rect x="83" y="134" width="44" height="56" rx="13" fill="#f8fafc"/>
+        <path d="M105 137 C78 96 65 67 71 45 C91 61 101 82 105 112 C109 82 119 61 139 45 C145 67 132 96 105 137 Z" fill="#6aa84f"/>
+        <path d="M103 134 C80 118 50 105 38 77 C71 78 94 93 103 124 Z" fill="#7fb069"/>
+        <path d="M107 134 C130 118 160 105 172 77 C139 78 116 93 107 124 Z" fill="#5f9d55"/>
+      </g>
+    </g>
+  </defs>
+  <rect x="0" y="0" width="210" height="240" fill="#000000"/>
+  <rect x="210" y="0" width="210" height="240" fill="#ffffff"/>
+  <use href="#plant"/>
+  <use href="#plant" transform="translate(210 0)"/>
+</svg>

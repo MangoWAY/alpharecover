@@ -28,6 +28,8 @@ type BatchItem = {
   blob?: Blob;
   url?: string;
   thumbUrl?: string;
+  blackUrl?: string;
+  whiteUrl?: string;
   processingMs?: number;
   trimApplied?: boolean;
 };
@@ -268,9 +270,15 @@ export default function Home() {
       setActiveId(queued[0]?.id ?? "");
 
       for (const pair of limitedPairs) {
+        const [blackBlob, whiteBlob] = await Promise.all([blobFromImageData(pair.black), blobFromImageData(pair.white)]);
+        const blackUrl = URL.createObjectURL(blackBlob);
+        const whiteUrl = URL.createObjectURL(whiteBlob);
+        urlsRef.current.push(blackUrl, whiteUrl);
         setItems((current) =>
           current.map((item) =>
-            item.id === pair.id ? { ...item, status: "processing", message: "Processing" } : item
+            item.id === pair.id
+              ? { ...item, blackUrl, whiteUrl, status: "processing", message: "Processing" }
+              : item
           )
         );
         const started = performance.now();
@@ -406,21 +414,22 @@ export default function Home() {
     }
   };
 
+  const trySample = async () => {
+    try {
+      const response = await fetch("/sample-split.svg");
+      const blob = await response.blob();
+      await handleSplitFiles([new File([blob], "sample-split.svg", { type: "image/svg+xml" })]);
+    } catch {
+      setError("Could not load the sample image.");
+    }
+  };
+
   const onDrop = async (event: React.DragEvent) => {
     event.preventDefault();
     setDragging(false);
     const files = Array.from(event.dataTransfer.files).filter((file) => file.type.startsWith("image/"));
     if (mode === "split") await handleSplitFiles(files);
   };
-
-  const backgroundClass =
-    background === "checker"
-      ? "checker-bg"
-      : background === "dark"
-        ? "dark-bg"
-        : background === "blue"
-          ? "blue-bg"
-          : "white-bg";
 
   const visibleItems = items.slice(0, 3);
   const moreCount = Math.max(0, items.length - 2);
@@ -434,7 +443,7 @@ export default function Home() {
             <span className="brand-mark" />
             AlphaRecover
           </div>
-          <div className="top-copy">Recover transparent PNGs from matched black and white AI renders</div>
+          <div className="top-copy">Recover transparent PNGs from black / white renders</div>
           <div className="top-actions">
             <span className="badge">Local only</span>
             <a className="ghost-button" href="mailto:feedback@example.com">
@@ -443,52 +452,45 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="main-grid">
-          <aside className="left-panel">
-            <div className="section-title">Input</div>
-            <div className="mode-toggle">
-              <button className={mode === "split" ? "active" : ""} onClick={() => setMode("split")}>
-                Split image
-              </button>
-              <button className={mode === "two" ? "active" : ""} onClick={() => setMode("two")}>
-                Two images
-              </button>
-            </div>
+        <section className="hero-section">
+          <h1>Recover transparency from black &amp; white renders</h1>
+          <p>Upload a split render or two matched images. Runs locally in your browser.</p>
+          <div className="mode-toggle hero-mode">
+            <button className={mode === "split" ? "active" : ""} onClick={() => setMode("split")}>
+              Split image
+            </button>
+            <button className={mode === "two" ? "active" : ""} onClick={() => setMode("two")}>
+              Two images
+            </button>
+          </div>
+        </section>
 
-            <div
-              className={`drop-zone ${dragging ? "dragging" : ""}`}
-              onDragEnter={() => setDragging(true)}
-              onDragOver={(event) => event.preventDefault()}
-              onDragLeave={() => setDragging(false)}
-              onDrop={onDrop}
-            >
-              <div className="upload-icon">↑</div>
-              <h1>{mode === "split" ? "Drop pairs or a folder" : "Choose black and white sets"}</h1>
-              <p>
-                {mode === "split"
-                  ? "Process one image or batch up to 20 matched black / white pairs locally."
-                  : "Select matching black-background files and white-background files in the same order."}
-              </p>
-
+        <section
+          className={`upload-card ${dragging ? "dragging" : ""}`}
+          onDragEnter={() => setDragging(true)}
+          onDragOver={(event) => event.preventDefault()}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+        >
+          <div className="upload-card-inner">
+            <div className="upload-icon">↑</div>
+            <h2>Drop your images here</h2>
+            <p>{mode === "split" ? "Split black/white image or a batch of split renders" : "Matched black and white image sets in the same order"}</p>
+            <div className="upload-actions">
               {mode === "split" ? (
+                <label className="primary-button">
+                  Choose images
+                  <input
+                    className="hidden-input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(event) => event.target.files && void handleSplitFiles(event.target.files)}
+                  />
+                </label>
+              ) : (
                 <>
                   <label className="primary-button">
-                    Choose images
-                    <input
-                      className="hidden-input"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={(event) => event.target.files && void handleSplitFiles(event.target.files)}
-                    />
-                  </label>
-                  <button className="secondary-button" style={{ marginTop: 10, width: 142 }} onClick={pasteFromClipboard}>
-                    Paste image
-                  </button>
-                </>
-              ) : (
-                <div className="two-inputs">
-                  <label className="mini-upload">
                     Black images
                     <input
                       className="hidden-input"
@@ -498,7 +500,7 @@ export default function Home() {
                       onChange={(event) => setBlackFiles(Array.from(event.target.files ?? []))}
                     />
                   </label>
-                  <label className="mini-upload">
+                  <label className="secondary-button">
                     White images
                     <input
                       className="hidden-input"
@@ -508,219 +510,218 @@ export default function Home() {
                       onChange={(event) => setWhiteFiles(Array.from(event.target.files ?? []))}
                     />
                   </label>
-                </div>
+                </>
               )}
+              <button className="secondary-button" onClick={trySample}>
+                Try sample
+              </button>
+            </div>
+          </div>
+          <div className="privacy-note">Runs locally. Your images are not uploaded.</div>
+        </section>
+
+        {error ? <div className="error-box page-error">{error}</div> : null}
+
+        <section className="result-card">
+          <div className="result-card-head">
+            <div>
+              <h2>Result preview</h2>
+              <p>{hasRealItems ? qualityText : "Upload an image to see the recovered PNG here."}</p>
+            </div>
+            {hasRealItems ? (
+              <div className={`quality ${failedCount ? "failed" : warningCount ? "" : "good"}`}>{qualityText}</div>
+            ) : null}
+          </div>
+
+          <div className="result-layout">
+            <div className="formula-preview">
+              <PreviewTile title="Black input" subtitle="alpha from black" imageUrl={activeItem?.blackUrl} kind="black" />
+              <div className="formula-symbol">+</div>
+              <PreviewTile title="White input" subtitle="details from white" imageUrl={activeItem?.whiteUrl} kind="white" />
+              <div className="formula-symbol">=</div>
+              <PreviewTile
+                title="Transparent PNG result"
+                subtitle={activeItem?.outputWidth ? `${activeItem.outputWidth} × ${activeItem.outputHeight}` : "preview"}
+                imageUrl={activeItem?.url}
+                kind={background}
+              />
             </div>
 
-            <div className="status-card">
-              {hasRealItems
-                ? "Batch ready. Shared adjustments apply to all outputs; flagged items remain available for review."
-                : "Drop images to recover alpha locally and export transparent PNGs."}
-            </div>
-
-            <div className="export-card">
+            <aside className="result-actions">
+              <div className="background-switch">
+                <div className="switch-title">Preview background</div>
+                <div className="swatches">
+                  {(["checker", "dark", "white", "blue"] as Background[]).map((candidate) => (
+                    <button
+                      aria-label={`Preview on ${candidate} background`}
+                      className={`swatch ${candidate === "checker" ? "checker" : candidate === "dark" ? "dark" : candidate === "blue" ? "blue" : ""} ${
+                        background === candidate ? "active" : ""
+                      }`}
+                      key={candidate}
+                      onClick={() => setBackground(candidate)}
+                    />
+                  ))}
+                </div>
+                <div className="swatch-labels">
+                  <span>Checker</span>
+                  <span>Black</span>
+                  <span>White</span>
+                  <span>Light</span>
+                </div>
+              </div>
               <button className="download-button" disabled={!outputCount} onClick={downloadZip}>
                 {outputCount > 1 ? "Download ZIP" : "Download PNG"}
               </button>
               <button className="secondary-button" disabled={!activeItem?.blob} onClick={copyCurrent}>
                 Copy current PNG
               </button>
-              <div className="facts">
-                <div className="fact">
+              <div className="export-meta">
+                <div>
                   <span>Output</span>
-                  <b>{outputCount ? `${outputCount} ${settings.trimBounds ? "trimmed " : ""}PNG${outputCount > 1 ? "s" : ""}` : "None"}</b>
+                  <b>
+                    {outputCount
+                      ? `${outputCount} ${settings.trimBounds ? "trimmed " : ""}PNG${outputCount > 1 ? "s" : ""}`
+                      : "None"}
+                  </b>
                 </div>
-                <div className="fact">
-                  <span>Packaging</span>
-                  <b>{outputCount > 1 ? "ZIP local" : "PNG local"}</b>
-                </div>
-                <div className="fact">
-                  <span>Padding</span>
+                <div>
+                  <span>Trim padding</span>
                   <b>{settings.trimBounds ? `${settings.trimPadding}px` : "Off"}</b>
                 </div>
+                <div>
+                  <span>Processing</span>
+                  <b>Local</b>
+                </div>
               </div>
-            </div>
+            </aside>
+          </div>
 
-            <details className="advanced-panel">
-              <summary>
-                <span>Advanced settings</span>
-                <span>Optional</span>
-              </summary>
-              <div className="advanced-content">
-                <SliderControl
-                  label="Alpha Cleanup"
-                  value={settings.alphaCleanup}
-                  onChange={(value) => updateSetting("alphaCleanup", value)}
-                />
-                <SliderControl
-                  label="Edge Smooth"
-                  value={settings.edgeSmooth}
-                  onChange={(value) => updateSetting("edgeSmooth", value)}
-                />
-                <SliderControl
-                  label="Denoise"
-                  value={settings.denoise}
-                  onChange={(value) => updateSetting("denoise", value)}
-                />
-
-                <div className="toggle-control">
-                  <div className="toggle-row">
-                    <div className="toggle-title">Trim bounds</div>
+          <div className="batch-strip compact">
+            {visibleItems.length
+              ? visibleItems.slice(0, 3).map((item, index) => {
+                  const displayItem =
+                    index === 2 && moreCount > 0
+                      ? { ...item, name: `+${moreCount} more`, message: "Queued locally" }
+                      : item;
+                  return (
                     <button
-                      aria-label="Toggle trim bounds"
-                      className={`switch-button ${settings.trimBounds ? "on" : ""}`}
-                      onClick={() => updateSetting("trimBounds", !settings.trimBounds)}
-                    />
-                  </div>
-                  <div className="toggle-sub">Crop empty transparent pixels with 8px padding.</div>
-                </div>
-              </div>
-            </details>
+                      className={`batch-item ${activeId === item.id ? "active" : ""}`}
+                      key={item.id}
+                      onClick={() => setActiveId(item.id)}
+                      type="button"
+                    >
+                      <div className="tiny-thumb">{item.thumbUrl ? <img src={item.thumbUrl} alt="" /> : null}</div>
+                      <div>
+                        <div className="batch-name">{displayItem.name}</div>
+                        <div className="batch-meta">{displayItem.message || statusLabel(displayItem.status)}</div>
+                      </div>
+                      <span className={`status-dot ${item.status}`} />
+                    </button>
+                  );
+                })
+              : null}
+          </div>
+        </section>
 
-            <div className="prompt-card">
-              <div className="prompt-head">
-                <div className="section-title">Prompt</div>
-                <button className="copy-button" onClick={() => navigator.clipboard.writeText(PROMPT)}>
-                  Copy
-                </button>
+        <details className="advanced-panel page-advanced">
+          <summary>
+            <span>Advanced settings</span>
+            <span>Optional</span>
+          </summary>
+          <div className="advanced-content advanced-grid">
+            <SliderControl
+              label="Alpha Cleanup"
+              value={settings.alphaCleanup}
+              onChange={(value) => updateSetting("alphaCleanup", value)}
+            />
+            <SliderControl
+              label="Edge Smooth"
+              value={settings.edgeSmooth}
+              onChange={(value) => updateSetting("edgeSmooth", value)}
+            />
+            <SliderControl
+              label="Denoise"
+              value={settings.denoise}
+              onChange={(value) => updateSetting("denoise", value)}
+            />
+            <div className="toggle-control">
+              <div className="toggle-row">
+                <div className="toggle-title">Trim bounds</div>
+                <button
+                  aria-label="Toggle trim bounds"
+                  className={`switch-button ${settings.trimBounds ? "on" : ""}`}
+                  onClick={() => updateSetting("trimBounds", !settings.trimBounds)}
+                />
               </div>
-              <div className="prompt-code">
-                same object, same composition,
-                <br />
-                pure black background
-                <br />
-                <br />
-                same object, same composition,
-                <br />
-                pure white background
-              </div>
+              <div className="toggle-sub">Crop empty transparent pixels with 8px padding.</div>
             </div>
+          </div>
+        </details>
 
-            <div className="info-card">
-              <div className="section-title">How it works</div>
-              <ol>
-                <li>Generate the same subject on black and white backgrounds.</li>
-                <li>Upload a side-by-side render or matching pairs.</li>
-                <li>Download trimmed transparent PNGs or a ZIP batch.</li>
-              </ol>
-            </div>
-
-            {error ? <div className="error-box">{error}</div> : null}
-          </aside>
-
-          <section className="workspace">
-            <div className="stage-head">
+        <section className="support-grid">
+          <div className="prompt-card">
+            <div className="prompt-head">
               <div>
-                <div className="stage-title">Batch recover</div>
-                <p>
-                  {hasRealItems
-                    ? `${items.length} pair${items.length > 1 ? "s" : ""} detected. Review one result while the rest stay in the queue.`
-                    : "Drop one image or a batch of matched pairs to begin."}
-                </p>
+                <div className="support-title">Need matching inputs?</div>
+                <p>Use this prompt to generate black &amp; white renders.</p>
               </div>
-              <div
-                className={`quality ${failedCount ? "failed" : warningCount ? "" : hasRealItems ? "good" : ""}`}
-              >
-                {qualityText}
-              </div>
+              <button className="copy-button" onClick={() => navigator.clipboard.writeText(PROMPT)}>
+                Copy prompt
+              </button>
             </div>
-
-            <div className="batch-strip">
-              {visibleItems.length
-                ? visibleItems.slice(0, 3).map((item, index) => {
-                    const displayItem =
-                      index === 2 && moreCount > 0
-                        ? { ...item, name: `+${moreCount} more`, message: "Queued locally" }
-                        : item;
-                    return (
-                      <button
-                        className={`batch-item ${activeId === item.id ? "active" : ""}`}
-                        key={item.id}
-                        onClick={() => setActiveId(item.id)}
-                        type="button"
-                      >
-                        <div className="tiny-thumb">
-                          {item.thumbUrl ? <img src={item.thumbUrl} alt="" /> : null}
-                        </div>
-                        <div>
-                          <div className="batch-name">{displayItem.name}</div>
-                          <div className="batch-meta">{displayItem.message || statusLabel(displayItem.status)}</div>
-                        </div>
-                        <span className={`status-dot ${item.status}`} />
-                      </button>
-                    );
-                  })
-                : Array.from({ length: 3 }, (_, index) => <div className="batch-placeholder" key={index} />)}
+            <div className="prompt-code">
+              same object, same composition,
+              <br />
+              pure black background
             </div>
+          </div>
 
-            <div className="focus-grid">
-              <div className="hero-card">
-                <div className="hero-title">
-                  Transparent result
-                  <span>
-                    {activeItem?.outputWidth && activeItem.outputHeight
-                      ? `${activeItem.name} · ${activeItem.outputWidth} x ${activeItem.outputHeight}`
-                      : "Waiting for images"}
-                  </span>
-                </div>
-                <div className={`preview-canvas ${backgroundClass}`}>
-                  {activeItem?.url ? (
-                    <img className="result-image" src={activeItem.url} alt={`${activeItem.name} transparent result`} />
-                  ) : (
-                    <div className="empty-state">
-                      Upload a side-by-side black / white render, or choose matching black and white image sets.
-                    </div>
-                  )}
-                </div>
-              </div>
+          <div className="info-card">
+            <div className="support-title">How it works</div>
+            <ol>
+              <li>Generate the same subject on black and white backgrounds.</li>
+              <li>Upload a split render or two matched images.</li>
+              <li>Get a transparent PNG instantly. All runs locally.</li>
+            </ol>
+          </div>
 
-              <div className="result-panel">
-                <div className="result-summary">
-                  <div className="summary-head">
-                    Current result <span>{activeItem ? statusLabel(activeItem.status).toLowerCase() : "idle"}</span>
-                  </div>
-                  <div className="summary-line">
-                    <span>Filename</span>
-                    <b>{activeItem ? `${activeItem.name}.png` : "none"}</b>
-                  </div>
-                  <div className="summary-line">
-                    <span>Canvas</span>
-                    <b>{settings.trimBounds ? `Trimmed · ${settings.trimPadding}px pad` : "Original size"}</b>
-                  </div>
-                  <div className="summary-line">
-                    <span>Quality</span>
-                    <b>{activeItem ? statusLabel(activeItem.status) : "Idle"}</b>
-                  </div>
-                </div>
-
-                <div className="background-switch">
-                  <div className="switch-title">Preview background</div>
-                  <div className="swatches">
-                    {(["checker", "dark", "white", "blue"] as Background[]).map((candidate) => (
-                      <button
-                        aria-label={`Preview on ${candidate} background`}
-                        className={`swatch ${candidate === "checker" ? "checker" : candidate === "dark" ? "dark" : candidate === "blue" ? "blue" : ""} ${
-                          background === candidate ? "active" : ""
-                        }`}
-                        key={candidate}
-                        onClick={() => setBackground(candidate)}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="result-note">
-                  {hasRealItems
-                    ? "Looks ready. Shared adjustments are applied to the whole batch."
-                    : "Everything runs locally. Images are not uploaded."}
-                </div>
-              </div>
-            </div>
-          </section>
-
-        </div>
+          <div className="privacy-card">
+            <div className="support-title">100% local &amp; private</div>
+            <p>AlphaRecover runs entirely in your browser. Your images never leave your device.</p>
+          </div>
+        </section>
       </div>
     </main>
+  );
+}
+
+function PreviewTile({
+  title,
+  subtitle,
+  imageUrl,
+  kind
+}: {
+  title: string;
+  subtitle: string;
+  imageUrl?: string;
+  kind: "black" | "white" | Background;
+}) {
+  const bgClass =
+    kind === "checker"
+      ? "checker-bg"
+      : kind === "dark" || kind === "black"
+        ? "dark-bg"
+        : kind === "blue"
+          ? "blue-bg"
+          : "white-bg";
+  return (
+    <div className="preview-tile">
+      <div className="preview-tile-title">{title}</div>
+      <div className="preview-tile-subtitle">{subtitle}</div>
+      <div className={`preview-tile-canvas ${bgClass}`}>
+        {imageUrl ? <img src={imageUrl} alt={title} /> : <span>Waiting</span>}
+      </div>
+    </div>
   );
 }
 
