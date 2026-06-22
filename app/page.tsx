@@ -398,9 +398,9 @@ export default function Home() {
 
   const trySample = async () => {
     try {
-      const response = await fetch("/sample-split.svg");
+      const response = await fetch("/sample.png");
       const blob = await response.blob();
-      await handleSplitFiles([new File([blob], "sample-split.svg", { type: "image/svg+xml" })]);
+      await handleSplitFiles([new File([blob], "sample.png", { type: "image/png" })]);
     } catch {
       setError("Could not load the sample image.");
     }
