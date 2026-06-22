@@ -185,7 +185,94 @@ button {
     inset 0 -2px 0 var(--blue);
 }
 
-.upload-card,
+.sample-equation {
+  width: min(calc(100% - 48px), 620px);
+  display: grid;
+  grid-template-columns: minmax(0, 112px) 28px minmax(0, 112px) 28px minmax(0, 112px);
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 6px auto 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 10px 12px;
+}
+
+.sample-tile {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  text-align: center;
+}
+
+.sample-tile span {
+  overflow: hidden;
+  color: #58647a;
+  font-size: 11px;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sample-canvas {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.sample-canvas img {
+  display: block;
+  max-width: none;
+}
+
+.black-sample,
+.white-sample {
+  background: #fff;
+}
+
+.black-sample img,
+.white-sample img {
+  position: absolute;
+  top: 0;
+  width: 200%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.black-sample img {
+  left: 0;
+}
+
+.white-sample img {
+  right: 0;
+}
+
+.result-sample img {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 12px rgba(15, 23, 42, 0.16));
+}
+
+.sample-symbol {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  border-radius: 50%;
+  background: #f1f4fa;
+  color: #475467;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.upload-workspace,
 .result-card,
 .page-advanced,
 .support-grid {
@@ -194,8 +281,17 @@ button {
   margin-left: auto;
 }
 
+.upload-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.85fr);
+  align-items: stretch;
+  gap: 14px;
+}
+
 .upload-card {
   margin-top: 0;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.95);
@@ -209,6 +305,7 @@ button {
 }
 
 .upload-card-inner {
+  flex: 1;
   min-height: 212px;
   display: flex;
   flex-direction: column;
@@ -756,7 +853,7 @@ button {
 
 .support-grid {
   display: grid;
-  grid-template-columns: 1.05fr 1.05fr 0.9fr;
+  grid-template-columns: 1fr 1fr;
   gap: 14px;
   margin-top: 12px;
 }
@@ -797,13 +894,74 @@ button {
   line-height: 1.45;
 }
 
+.subject-field {
+  display: grid;
+  gap: 8px;
+}
+
+.subject-field span {
+  color: #344054;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.subject-field textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 74px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+  color: var(--ink);
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.subject-field textarea:focus {
+  border-color: #8fb3ff;
+  box-shadow: 0 0 0 3px rgba(47, 102, 245, 0.12);
+  outline: 0;
+}
+
+.prompt-mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 12px 0;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f3f6fb;
+}
+
+.prompt-mode-toggle button {
+  height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.prompt-mode-toggle button.active {
+  background: #fff;
+  color: var(--blue);
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.1);
+}
+
 .prompt-code {
+  max-height: 170px;
+  overflow: auto;
   border-radius: 7px;
   background: #101828;
   color: #d1fadf;
   padding: 12px;
   font-size: 12px;
   line-height: 1.55;
+  white-space: pre-wrap;
+  margin: 0;
 }
 
 .copy-button {
@@ -863,6 +1021,7 @@ button {
     border-radius: 0;
   }
 
+  .upload-workspace,
   .result-layout,
   .support-grid {
     grid-template-columns: 1fr;
@@ -892,7 +1051,7 @@ button {
     padding-top: 30px;
   }
 
-  .upload-card,
+  .upload-workspace,
   .result-card,
   .page-advanced,
   .support-grid,
@@ -906,6 +1065,15 @@ button {
 
   .formula-preview {
     grid-template-columns: 1fr;
+  }
+
+  .sample-equation {
+    grid-template-columns: 1fr;
+    max-width: 360px;
+  }
+
+  .sample-symbol {
+    margin: -2px auto;
   }
 
   .formula-symbol {

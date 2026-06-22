@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type Mode = "split" | "two";
 type ItemStatus = "queued" | "processing" | "ready" | "warning" | "failed";
+type PromptMode = "split" | "convert";
 
 type PairInput = {
   id: string;
@@ -46,11 +47,33 @@ type WorkerResponse = {
   warning?: string;
 };
 
-const PROMPT = `same object, same composition,
-pure black background
+const DEFAULT_SUBJECT = "a cute orange tabby cat sticker, front view, clean edges";
 
-same object, same composition,
-pure white background`;
+function buildPrompt(mode: PromptMode, subject: string) {
+  const cleanSubject = subject.trim() || DEFAULT_SUBJECT;
+  if (mode === "split") {
+    return `Create one image split vertically into two equal halves.
+
+Subject: ${cleanSubject}
+
+Both halves must contain the exact same subject, same size, same position, same pose, same lighting, and same camera angle.
+
+Left half: pure black background (#000000).
+Right half: pure white background (#FFFFFF).
+
+No shadows, no reflections, no gradients, no floor, no text, no watermark.`;
+  }
+
+  return `Step 1: Create this subject on a pure black background (#000000).
+
+Subject: ${cleanSubject}
+
+Center the subject clearly. No shadows, no reflections, no gradients, no floor, no text, no watermark.
+
+Step 2: Upload the black-background image and change only the background to pure white (#FFFFFF).
+
+Do not change the subject, size, position, pose, lighting, camera angle, edges, or details. Keep everything identical except the background color.`;
+}
 
 function fileBaseName(file: File) {
   return file.name.replace(/\.[^.]+$/, "") || "image";
@@ -216,6 +239,8 @@ export default function Home() {
   const [activeId, setActiveId] = useState("");
   const [blackFiles, setBlackFiles] = useState<File[]>([]);
   const [whiteFiles, setWhiteFiles] = useState<File[]>([]);
+  const [promptMode, setPromptMode] = useState<PromptMode>("split");
+  const [subjectPrompt, setSubjectPrompt] = useState(DEFAULT_SUBJECT);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
   const [settings, setSettings] = useState<Settings>({
@@ -418,6 +443,7 @@ export default function Home() {
   const outputCount = items.filter((item) => item.blob).length;
   const isProcessing = items.some((item) => item.status === "queued" || item.status === "processing");
   const showResult = outputCount > 0;
+  const generatedPrompt = buildPrompt(promptMode, subjectPrompt);
 
   return (
     <main className="app-shell">
@@ -448,60 +474,93 @@ export default function Home() {
           </div>
         </section>
 
-        <section
-          className={`upload-card ${dragging ? "dragging" : ""}`}
-          onDragEnter={() => setDragging(true)}
-          onDragOver={(event) => event.preventDefault()}
-          onDragLeave={() => setDragging(false)}
-          onDrop={onDrop}
-        >
-          <div className="upload-card-inner">
-            <div className="upload-icon">↑</div>
-            <h2>Drop your images here</h2>
-            <p>{mode === "split" ? "Upload one split render or a batch." : "Upload black and white images in the same order."}</p>
-            <div className="upload-actions">
-              {mode === "split" ? (
-                <label className="primary-button">
-                  Choose images
-                  <input
-                    className="hidden-input"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(event) => event.target.files && void handleSplitFiles(event.target.files)}
-                  />
-                </label>
-              ) : (
-                <>
+        {!showResult ? <SampleEquation /> : null}
+
+        <section className="upload-workspace">
+          <div
+            className={`upload-card ${dragging ? "dragging" : ""}`}
+            onDragEnter={() => setDragging(true)}
+            onDragOver={(event) => event.preventDefault()}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
+          >
+            <div className="upload-card-inner">
+              <div className="upload-icon">↑</div>
+              <h2>Drop your images here</h2>
+              <p>{mode === "split" ? "Upload one split render or a batch." : "Upload black and white images in the same order."}</p>
+              <div className="upload-actions">
+                {mode === "split" ? (
                   <label className="primary-button">
-                    Black images
+                    Choose images
                     <input
                       className="hidden-input"
                       type="file"
                       accept="image/*"
                       multiple
-                      onChange={(event) => setBlackFiles(Array.from(event.target.files ?? []))}
+                      onChange={(event) => event.target.files && void handleSplitFiles(event.target.files)}
                     />
                   </label>
-                  <label className="secondary-button">
-                    White images
-                    <input
-                      className="hidden-input"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={(event) => setWhiteFiles(Array.from(event.target.files ?? []))}
-                    />
-                  </label>
-                </>
-              )}
-              <button className="secondary-button" onClick={trySample}>
-                Try sample
-              </button>
+                ) : (
+                  <>
+                    <label className="primary-button">
+                      Black images
+                      <input
+                        className="hidden-input"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(event) => setBlackFiles(Array.from(event.target.files ?? []))}
+                      />
+                    </label>
+                    <label className="secondary-button">
+                      White images
+                      <input
+                        className="hidden-input"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(event) => setWhiteFiles(Array.from(event.target.files ?? []))}
+                      />
+                    </label>
+                  </>
+                )}
+                <button className="secondary-button" onClick={trySample}>
+                  Try sample
+                </button>
+              </div>
+            </div>
+            <div className="privacy-note">
+              {isProcessing && !showResult ? "Processing locally..." : "Runs locally. Your images are not uploaded."}
             </div>
           </div>
-          <div className="privacy-note">
-            {isProcessing && !showResult ? "Processing locally..." : "Runs locally. Your images are not uploaded."}
+
+          <div className="prompt-card">
+            <div className="prompt-head">
+              <div>
+                <div className="support-title">Need matching inputs?</div>
+                <p>Describe the subject, then copy the prompt.</p>
+              </div>
+              <button className="copy-button" onClick={() => navigator.clipboard.writeText(generatedPrompt)}>
+                Copy prompt
+              </button>
+            </div>
+            <label className="subject-field">
+              <span>Subject</span>
+              <textarea
+                onChange={(event) => setSubjectPrompt(event.target.value)}
+                rows={3}
+                value={subjectPrompt}
+              />
+            </label>
+            <div className="prompt-mode-toggle" aria-label="Prompt workflow">
+              <button className={promptMode === "split" ? "active" : ""} onClick={() => setPromptMode("split")}>
+                Split image
+              </button>
+              <button className={promptMode === "convert" ? "active" : ""} onClick={() => setPromptMode("convert")}>
+                Black to white
+              </button>
+            </div>
+            <pre className="prompt-code">{generatedPrompt}</pre>
           </div>
         </section>
 
@@ -594,23 +653,6 @@ export default function Home() {
         </details>
 
         <section className="support-grid">
-          <div className="prompt-card">
-            <div className="prompt-head">
-              <div>
-                <div className="support-title">Need matching inputs?</div>
-                <p>Use this prompt to generate black &amp; white renders.</p>
-              </div>
-              <button className="copy-button" onClick={() => navigator.clipboard.writeText(PROMPT)}>
-                Copy prompt
-              </button>
-            </div>
-            <div className="prompt-code">
-              same object, same composition,
-              <br />
-              pure black background
-            </div>
-          </div>
-
           <div className="info-card">
             <div className="support-title">How it works</div>
             <ol>
@@ -627,6 +669,33 @@ export default function Home() {
         </section>
       </div>
     </main>
+  );
+}
+
+function SampleEquation() {
+  return (
+    <section className="sample-equation" aria-label="Black and white renders become a transparent PNG">
+      <div className="sample-tile">
+        <div className="sample-canvas black-sample">
+          <img src="/sample.png" alt="" />
+        </div>
+        <span>Black render</span>
+      </div>
+      <div className="sample-symbol">+</div>
+      <div className="sample-tile">
+        <div className="sample-canvas white-sample">
+          <img src="/sample.png" alt="" />
+        </div>
+        <span>White render</span>
+      </div>
+      <div className="sample-symbol">=</div>
+      <div className="sample-tile">
+        <div className="sample-canvas checker-bg result-sample">
+          <img src="/sample-result.png" alt="" />
+        </div>
+        <span>Transparent PNG</span>
+      </div>
+    </section>
   );
 }
 

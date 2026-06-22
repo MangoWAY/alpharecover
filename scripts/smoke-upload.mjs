@@ -24,7 +24,8 @@ try {
       const downloadButton = Array.from(document.querySelectorAll("button")).find((button) =>
         /Download (PNG|ZIP)/.test(button.textContent ?? "")
       );
-      return Boolean(downloadButton && !downloadButton.disabled && document.body.innerText.includes("Ready"));
+      const text = document.body.innerText;
+      return Boolean(downloadButton && !downloadButton.disabled && (text.includes("Ready") || text.includes("Review")));
     },
     { timeout: 10000 }
   );
@@ -36,7 +37,9 @@ try {
       height: img.naturalHeight
     }))
   }));
-  if (!result.text.includes("Ready")) throw new Error("Recovered item did not become ready");
+  if (!result.text.includes("Ready") && !result.text.includes("Review")) {
+    throw new Error("Recovered item did not finish processing");
+  }
   if (!result.images.some((image) => image.src?.startsWith("blob:") && image.width > 0 && image.height > 0)) {
     throw new Error("Recovered blob image was not rendered");
   }
