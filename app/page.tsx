@@ -32,6 +32,14 @@ type BatchItem = {
   whiteUrl?: string;
   processingMs?: number;
   trimApplied?: boolean;
+  alignment?: AlignmentInfo;
+};
+
+type AlignmentInfo = {
+  dx: number;
+  dy: number;
+  status: "off" | "good" | "aligned" | "review";
+  improvement?: number;
 };
 
 type WorkerResponse = {
@@ -43,6 +51,7 @@ type WorkerResponse = {
   outputHeight?: number;
   image?: ImageData;
   trimApplied?: boolean;
+  alignment?: AlignmentInfo;
   message?: string;
   warning?: string;
 };
@@ -93,6 +102,15 @@ function statusLabel(status: ItemStatus) {
   if (status === "failed") return "Failed";
   if (status === "processing") return "Processing";
   return "Queued";
+}
+
+function alignmentLabel(alignment?: AlignmentInfo) {
+  if (!alignment || alignment.status === "off" || alignment.status === "good") return "";
+  if (alignment.status === "review") return "Needs review · images may not match";
+  const dx = Math.abs(alignment.dx);
+  const dy = Math.abs(alignment.dy);
+  if (dx < 2 && dy < 2) return "";
+  return `Auto aligned · ${alignment.dx}px, ${alignment.dy}px`;
 }
 
 async function loadBitmap(file: File) {
@@ -229,6 +247,7 @@ type Settings = {
   alphaCleanup: number;
   edgeSmooth: number;
   denoise: number;
+  autoAlign: boolean;
   trimBounds: boolean;
   trimPadding: number;
 };
@@ -247,6 +266,7 @@ export default function Home() {
     alphaCleanup: 62,
     edgeSmooth: 38,
     denoise: 45,
+    autoAlign: true,
     trimBounds: true,
     trimPadding: 8
   });
@@ -311,20 +331,22 @@ export default function Home() {
         urlsRef.current.push(url);
         const status: ItemStatus = response.warning ? "warning" : "ready";
         const elapsed = Math.max(0.1, (performance.now() - started) / 1000);
+        const alignmentMessage = alignmentLabel(response.alignment);
         setItems((current) =>
           current.map((item) =>
             item.id === pair.id
               ? {
                   ...item,
                   status,
-                  message: response.warning ?? `Ready · ${elapsed.toFixed(1)}s`,
+                  message: response.warning || alignmentMessage || `Ready · ${elapsed.toFixed(1)}s`,
                   blob,
                   url,
                   thumbUrl: url,
                   outputWidth: response.outputWidth,
                   outputHeight: response.outputHeight,
                   processingMs: Math.round(elapsed * 1000),
-                  trimApplied: response.trimApplied
+                  trimApplied: response.trimApplied,
+                  alignment: response.alignment
                 }
               : item
           )
@@ -638,6 +660,17 @@ export default function Home() {
               value={settings.denoise}
               onChange={(value) => updateSetting("denoise", value)}
             />
+            <div className="toggle-control">
+              <div className="toggle-row">
+                <div className="toggle-title">Auto align</div>
+                <button
+                  aria-label="Toggle auto align"
+                  className={`switch-button ${settings.autoAlign ? "on" : ""}`}
+                  onClick={() => updateSetting("autoAlign", !settings.autoAlign)}
+                />
+              </div>
+              <div className="toggle-sub">Fix small position shifts before recovery.</div>
+            </div>
             <div className="toggle-control">
               <div className="toggle-row">
                 <div className="toggle-title">Trim bounds</div>
