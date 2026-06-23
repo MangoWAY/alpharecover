@@ -57,6 +57,7 @@ type WorkerResponse = {
 };
 
 const DEFAULT_SUBJECT = "a cute orange tabby cat sticker, front view, clean edges";
+const WORKER_VERSION = "2026-06-23-align-v2";
 
 function buildPrompt(mode: PromptMode, subject: string) {
   const cleanSubject = subject.trim() || DEFAULT_SUBJECT;
@@ -274,7 +275,7 @@ export default function Home() {
   const urlsRef = useRef<string[]>([]);
 
   useEffect(() => {
-    workerRef.current = new Worker("/recover-worker.js");
+    workerRef.current = new Worker(`/recover-worker.js?v=${WORKER_VERSION}`);
     return () => {
       workerRef.current?.terminate();
       urlsRef.current.forEach((url) => URL.revokeObjectURL(url));
