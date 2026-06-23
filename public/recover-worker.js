@@ -108,7 +108,9 @@ function makeResponseMap(imageData, width, height, background) {
       }
 
       const backgroundNoise = background === "black" ? luminance : 255 - luminance;
-      const response = foreground < 10 && backgroundNoise < 10 ? 0 : foreground * 0.82 + edge * 0.18;
+      const response = foreground < 10 && backgroundNoise < 10
+        ? 0
+        : Math.max(foreground * 0.25, edge * 2.4);
       map[y * mapWidth + x] = clamp(Math.round(response), 0, 255);
     }
   }
@@ -164,7 +166,7 @@ function alignmentScore(blackMap, whiteMap, dx, dy) {
       if (sourceX < 0 || sourceX >= width) continue;
       const blackValue = blackMap.data[y * width + x];
       const whiteValue = whiteMap.data[sourceY * width + sourceX];
-      if (blackValue < 8 && whiteValue < 8) continue;
+      if (blackValue < 18 && whiteValue < 18) continue;
       total += Math.abs(blackValue - whiteValue);
       count++;
     }
@@ -253,6 +255,50 @@ function shiftImageData(image, dx, dy, fillR, fillG, fillB) {
   return output;
 }
 
+function suppressBackgroundArtifacts(image, blackData, whiteData, width, height) {
+  const data = image.data;
+  const artifactColumns = new Uint8Array(width);
+
+  for (let x = 0; x < width; x++) {
+    let darkBackgroundCount = 0;
+    for (let y = 0; y < height; y++) {
+      const index = (y * width + x) * 4;
+      const blackMax = Math.max(blackData[index], blackData[index + 1], blackData[index + 2]);
+      const recoveredLuma = data[index] * 0.299 + data[index + 1] * 0.587 + data[index + 2] * 0.114;
+      if (data[index + 3] > 64 && blackMax < 18 && recoveredLuma < 28) {
+        darkBackgroundCount++;
+      }
+    }
+    if (darkBackgroundCount > height * 0.45) artifactColumns[x] = 1;
+  }
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const index = (y * width + x) * 4;
+      const alpha = data[index + 3];
+      if (alpha === 0) continue;
+
+      const blackMax = Math.max(blackData[index], blackData[index + 1], blackData[index + 2]);
+      const whiteMin = Math.min(whiteData[index], whiteData[index + 1], whiteData[index + 2]);
+      const recoveredLuma = data[index] * 0.299 + data[index + 1] * 0.587 + data[index + 2] * 0.114;
+      const weakBackgroundNoise = alpha <= 20 && blackMax < 18 && whiteMin > 190;
+      const columnArtifact =
+        (artifactColumns[x] || artifactColumns[x - 1] || artifactColumns[x + 1]) &&
+        blackMax < 24 &&
+        recoveredLuma < 36;
+
+      if (weakBackgroundNoise || columnArtifact) {
+        data[index] = 0;
+        data[index + 1] = 0;
+        data[index + 2] = 0;
+        data[index + 3] = 0;
+      }
+    }
+  }
+
+  return image;
+}
+
 self.onmessage = (event) => {
   const { id, black, white, width, height, settings } = event.data;
   try {
@@ -293,6 +339,8 @@ self.onmessage = (event) => {
         Math.abs(alphaR - alphaG) + Math.abs(alphaG - alphaB) + Math.abs(alphaB - alphaR);
       if (mismatch > 90) suspicious++;
     }
+
+    suppressBackgroundArtifacts(result, blackData, whiteData, width, height);
 
     const smoothed = smoothAlpha(result.data, width, height, settings.edgeSmooth);
     const finalImage =
